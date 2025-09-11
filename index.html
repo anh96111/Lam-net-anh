@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Làm Nét & Khôi Phục Ảnh - Miễn Phí</title>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; margin: 0 auto; 
+            background: white; border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        
+        .upload-zone { 
+            border: 3px dashed #ddd; margin: 30px; padding: 60px;
+            text-align: center; border-radius: 10px;
+            transition: all 0.3s ease; cursor: pointer;
+        }
+        .upload-zone:hover, .upload-zone.dragover { 
+            border-color: #2196F3; background: #f8f9ff;
+        }
+        .upload-zone i { font-size: 4em; color: #ddd; margin-bottom: 20px; }
+        
+        .controls { 
+            padding: 20px 30px; display: flex; gap: 15px; 
+            flex-wrap: wrap; justify-content: center;
+        }
+        .btn { 
+            padding: 12px 30px; border: none; border-radius: 25px;
+            cursor: pointer; font-size: 16px; font-weight: 600;
+            transition: all 0.3s ease; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary { background: #2196F3; color: white; }
+        .btn-secondary { background: #FF9800; color: white; }
+        .btn-success { background: #4CAF50; color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .results { display: none; padding: 30px; }
+        .image-comparison { 
+            display: grid; grid-template-columns: 1fr 1fr; 
+            gap: 30px; margin-bottom: 30px;
+        }
+        @media (max-width: 768px) {
+            .image-comparison { grid-template-columns: 1fr; }
+        }
+        .image-box { 
+            background: #f8f9fa; border-radius: 10px; 
+            overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .image-box h3 { 
+            background: #333; color: white; padding: 15px; 
+            margin: 0; font-size: 1.2em;
+        }
+        .image-box canvas, .image-box img { 
+            width: 100%; height: auto; display: block;
+        }
+        
+        .progress { 
+            display: none; margin: 20px 30px; height: 6px; 
+            background: #f0f0f0; border-radius: 3px; overflow: hidden;
+        }
+        .progress-bar { 
+            height: 100%; background: linear-gradient(45deg, #2196F3, #21CBF3);
+            width: 0%; transition: width 0.3s ease;
+        }
+        
+        .settings { 
+            background: #f8f9fa; padding: 20px 30px; 
+            border-top: 1px solid #eee;
+        }
+        .setting-group { 
+            display: flex; align-items: center; gap: 15px; 
+            margin-bottom: 15px; flex-wrap: wrap;
+        }
+        .setting-group label { font-weight: 600; min-width: 120px; }
+        input[type="range"] { flex: 1; min-width: 150px; }
+        .range-value { 
+            background: #2196F3; color: white; padding: 4px 8px; 
+            border-radius: 4px; font-size: 0.9em; min-width: 40px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Làm Nét & Khôi Phục Ảnh</h1>
+            <p>Công cụ AI miễn phí - Xử lý hoàn toàn trên máy bạn</p>
+        </div>
+        
+        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size: 4em; margin-bottom: 20px;">📸</div>
+            <h3>Kéo thả ảnh vào đây hoặc click để chọn</h3>
+            <p style="color: #666; margin-top: 10px;">Hỗ trợ: JPG, PNG, WebP (tối đa 20MB)</p>
+        </div>
+        
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        
+        <div class="controls">
+            <button class="btn btn-primary" onclick="enhanceSharpness()" disabled>
+                ✨ Làm Nét Ảnh
+            </button>
+            <button class="btn btn-secondary" onclick="restorePhoto()" disabled>
+                🔧 Khôi Phục Ảnh Cũ
+            </button>
+            <button class="btn btn-success" onclick="downloadResult()" disabled style="display: none;">
+                💾 Tải Xuống
+            </button>
+        </div>
+        
+        <div class="progress">
+            <div class="progress-bar"></div>
+        </div>
+        
+        <div class="settings">
+            <div class="setting-group">
+                <label>Độ nét:</label>
+                <input type="range" id="sharpness" min="0" max="3" step="0.1" value="1.5">
+                <span class="range-value" id="sharpnessValue">1.5</span>
+            </div>
+            <div class="setting-group">
+                <label>Giảm nhiễu:</label>
+                <input type="range" id="denoise" min="0" max="20" step="1" value="5">
+                <span class="range-value" id="denoiseValue">5</span>
+            </div>
+            <div class="setting-group">
+                <label>Cải thiện độ tương phản:</label>
+                <input type="range" id="contrast" min="0" max="2" step="0.1" value="1.2">
+                <span class="range-value" id="contrastValue">1.2</span>
+            </div>
+        </div>
+        
+        <div class="results">
+            <div class="image-comparison">
+                <div class="image-box">
+                    <h3>📷 Ảnh Gốc</h3>
+                    <canvas id="originalCanvas"></canvas>
+                </div>
+                <div class="image-box">
+                    <h3>✨ Ảnh Đã Xử Lý</h3>
+                    <canvas id="resultCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let originalImage = null;
+        let processedImage = null;
+        let cvReady = false;
+        
+        // Wait for OpenCV to load
+        function onOpenCvReady() {
+            cvReady = true;
+            console.log('OpenCV.js is ready');
+        }
+        
+        // Check if OpenCV is loaded
+        function waitForOpenCV() {
+            if (typeof cv !== 'undefined') {
+                onOpenCvReady();
+            } else {
+                setTimeout(waitForOpenCV, 100);
+            }
+        }
+        waitForOpenCV();
+        
+        // Update range values
+        document.getElementById('sharpness').oninput = function() {
+            document.getElementById('sharpnessValue').textContent = this.value;
+        };
+        document.getElementById('denoise').oninput = function() {
+            document.getElementById('denoiseValue').textContent = this.value;
+        };
+        document.getElementById('contrast').oninput = function() {
+            document.getElementById('contrastValue').textContent = this.value;
+        };
+        
+        // File handling
+        document.getElementById('fileInput').addEventListener('change', handleFile);
+        
+        const uploadZone = document.querySelector('.upload-zone');
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileObject(files[0]);
+            }
+        });
+        
+        function handleFile(event) {
+            handleFileObject(event.target.files[0]);
+        }
+        
+        function handleFileObject(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                alert('Vui lòng chọn file ảnh hợp lệ!');
+                return;
+            }
+            
+            if (file.size > 20 * 1024 * 1024) {
+                alert('File quá lớn! Vui lòng chọn ảnh dưới 20MB.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                loadImageToCanvas(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function loadImageToCanvas(imageSrc) {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('originalCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Resize if too large (for performance)
+                let { width, height } = img;
+                const maxSize = 2048;
+                if (width > maxSize || height > maxSize) {
+                    const ratio = Math.min(maxSize / width, maxSize / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                originalImage = canvas;
+                
+                // Enable buttons
+                document.querySelectorAll('.controls .btn').forEach(btn => {
+                    btn.disabled = false;
+                });
+                
+                // Show results area
+                document.querySelector('.results').style.display = 'block';
+                
+                // Copy to result canvas initially
+                const resultCanvas = document.getElementById('resultCanvas');
+                resultCanvas.width = width;
+                resultCanvas.height = height;
+                resultCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            };
+            img.src = imageSrc;
+        }
+        
+        function showProgress() {
+            const progress = document.querySelector('.progress');
+            const bar = document.querySelector('.progress-bar');
+            progress.style.display = 'block';
+            
+            let width = 0;
+            const interval = setInterval(() => {
+                width += Math.random() * 20 + 5;
+                if (width >= 90) {
+                    width = 90;
+                    clearInterval(interval);
+                }
+                bar.style.width = width + '%';
+            }, 100);
+            
+            return () => {
+                clearInterval(interval);
+                bar.style.width = '100%';
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                    bar.style.width = '0%';
+                }, 500);
+            };
+        }
+        
+        async function enhanceSharpness() {
+            if (!originalImage || !cvReady) {
+                alert('Vui lòng chọn ảnh và đợi hệ thống sẵn sàng!');
+                return;
+            }
+            
+            const hideProgress = showProgress();
+            
+            try {
+                // Get parameters
+                const sharpness = parseFloat(document.getElementById('sharpness').value);
+                const denoiseLevel = parseInt(document.getElementById('denoise').value);
+                const contrastLevel = parseFloat(document.getElementById('contrast').value);
+                
+                // Process with OpenCV
+                const src = cv.imread(originalImage);
+                let dst = new cv.Mat();
+                
+                // Step 1: Denoise if needed
+                if (denoiseLevel > 0) {
+                    cv.bilateralFilter(src, dst, 9, denoiseLevel * 10, denoiseLevel * 5);
+                    src.delete();
+                    var temp = dst.clone();
+                    dst.delete();
+                    dst = temp;
+                }
+                
+                // Step 2: Unsharp masking for sharpening
+                if (sharpness > 0) {
+                    const blurred = new cv.Mat();
+                    const kernel = new cv.Mat();
+                    cv.GaussianBlur(dst, blurred, new cv.Size(0, 0), 1.0, 1.0, cv.BORDER_DEFAULT);
+                    
+                    // dst = (1 + amount) * original - amount * blurred
+                    cv.addWeighted(dst, 1 + sharpness, blurred, -sharpness, 0, dst);
+                    
+                    blurred.delete();
+                }
+                
+                // Step 3: Adjust contrast
+                if (contrastLevel !== 1.0) {
+                    dst.convertTo(dst, -1, contrastLevel, 0);
+                }
+                
+                // Display result
+                const resultCanvas = document.getElementById('resultCanvas');
+                cv.imshow(resultCanvas, dst);
+                
+                // Cleanup
+                src.delete();
+                dst.delete();
+                
+                // Enable download
+                document.querySelector('.btn-success').style.display = 'inline-flex';
+                
+            } catch (error) {
+                console.error('Enhancement failed:', error);
+                alert('Xử lý thất bại. Vui lòng thử lại!');
+            } finally {
+                hideProgress();
+            }
+        }
+        
+        async function restorePhoto() {
+            if (!originalImage || !cvReady) {
+                alert('Vui lòng chọn ảnh và đợi hệ thống sẵn sàng!');
+                return;
+            }
+            
+            const hideProgress = showProgress();
+            
+            try {
+                const denoiseLevel = parseInt(document.getElementById('denoise').value);
+                const contrastLevel = parseFloat(document.getElementById('contrast').value);
+                
+                const src = cv.imread(originalImage);
+                let dst = new cv.Mat();
+                
+                // Step 1: Strong denoising for old photos
+                cv.bilateralFilter(src, dst, 15, denoiseLevel * 15, denoiseLevel * 10);
+                
+                // Step 2: Histogram equalization for better contrast
+                const gray = new cv.Mat();
+                const channels = new cv.MatVector();
+                
+                cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY);
+                cv.equalizeHist(gray, gray);
+                cv.cvtColor(gray, gray, cv.COLOR_GRAY2RGBA);
+                
+                // Blend with original for natural look
+                cv.addWeighted(dst, 0.7, gray, 0.3, 0, dst);
+                
+                // Step 3: Enhance contrast
+                if (contrastLevel !== 1.0) {
+                    dst.convertTo(dst, -1, contrastLevel, 10);
+                }
+                
+                // Step 4: Light sharpening
+                const blurred = new cv.Mat();
+                cv.GaussianBlur(dst, blurred, new cv.Size(0, 0), 0.8, 0.8, cv.BORDER_DEFAULT);
+                cv.addWeighted(dst, 1.3, blurred, -0.3, 0, dst);
+                
+                // Display result
+                const resultCanvas = document.getElementById('resultCanvas');
+                cv.imshow(resultCanvas, dst);
+                
+                // Cleanup
+                src.delete();
+                dst.delete();
+                gray.delete();
+                channels.delete();
+                blurred.delete();
+                
+                // Enable download
+                document.querySelector('.btn-success').style.display = 'inline-flex';
+                
+            } catch (error) {
+                console.error('Restoration failed:', error);
+                alert('Khôi phục thất bại. Vui lòng thử lại!');
+            } finally {
+                hideProgress();
+            }
+        }
+        
+        function downloadResult() {
+            const resultCanvas = document.getElementById('resultCanvas');
+            if (!resultCanvas) return;
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.download = 'enhanced_photo_' + Date.now() + '.png';
+            link.href = resultCanvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
