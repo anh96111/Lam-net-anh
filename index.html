@@ -4,433 +4,884 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Làm Nét & Khôi Phục Ảnh - Miễn Phí</title>
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Reset và thiết lập cơ bản */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; padding: 20px;
+            min-height: 100vh; 
+            padding: 15px;
+            color: #333;
         }
+        
+        /* Container chính */
         .container { 
-            max-width: 1200px; margin: 0 auto; 
-            background: white; border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
             overflow: hidden;
+            animation: slideIn 0.6s ease-out;
         }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Header */
         .header { 
-            background: linear-gradient(45deg, #2196F3, #21CBF3);
-            color: white; padding: 30px; text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 40px 30px; 
+            text-align: center;
         }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .header p { opacity: 0.9; font-size: 1.1em; }
         
+        .header h1 { 
+            font-size: clamp(2rem, 4vw, 3rem); 
+            margin-bottom: 10px; 
+            font-weight: 700;
+        }
+        
+        .header p { 
+            opacity: 0.9; 
+            font-size: 1.1em; 
+            margin-bottom: 15px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .status.ready { color: #4CAF50; }
+        .status.loading { color: #ffd700; animation: pulse 2s infinite; }
+        .status.error { color: #ff6b6b; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Upload Zone */
         .upload-zone { 
-            border: 3px dashed #ddd; margin: 30px; padding: 60px;
-            text-align: center; border-radius: 10px;
-            transition: all 0.3s ease; cursor: pointer;
+            border: 3px dashed #ddd; 
+            margin: 30px; 
+            padding: 60px 30px;
+            text-align: center; 
+            border-radius: 15px;
+            transition: all 0.3s ease; 
+            cursor: pointer;
+            position: relative;
         }
-        .upload-zone:hover, .upload-zone.dragover { 
-            border-color: #2196F3; background: #f8f9ff;
-        }
-        .upload-zone i { font-size: 4em; color: #ddd; margin-bottom: 20px; }
         
+        .upload-zone:hover, 
+        .upload-zone.dragover { 
+            border-color: #667eea; 
+            background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+            transform: translateY(-2px);
+        }
+        
+        .upload-icon { 
+            font-size: 4em; 
+            margin-bottom: 20px; 
+            opacity: 0.7;
+        }
+        
+        .upload-zone h3 { 
+            font-size: 1.5em; 
+            margin-bottom: 10px; 
+            color: #333;
+        }
+        
+        .upload-zone p { 
+            color: #666; 
+            margin-bottom: 20px; 
+        }
+        
+        /* Controls */
         .controls { 
-            padding: 20px 30px; display: flex; gap: 15px; 
-            flex-wrap: wrap; justify-content: center;
-        }
-        .btn { 
-            padding: 12px 30px; border: none; border-radius: 25px;
-            cursor: pointer; font-size: 16px; font-weight: 600;
-            transition: all 0.3s ease; text-decoration: none;
-            display: inline-flex; align-items: center; gap: 8px;
-        }
-        .btn-primary { background: #2196F3; color: white; }
-        .btn-secondary { background: #FF9800; color: white; }
-        .btn-success { background: #4CAF50; color: white; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        
-        .results { display: none; padding: 30px; }
-        .image-comparison { 
-            display: grid; grid-template-columns: 1fr 1fr; 
-            gap: 30px; margin-bottom: 30px;
-        }
-        @media (max-width: 768px) {
-            .image-comparison { grid-template-columns: 1fr; }
-        }
-        .image-box { 
-            background: #f8f9fa; border-radius: 10px; 
-            overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .image-box h3 { 
-            background: #333; color: white; padding: 15px; 
-            margin: 0; font-size: 1.2em;
-        }
-        .image-box canvas, .image-box img { 
-            width: 100%; height: auto; display: block;
-        }
-        
-        .progress { 
-            display: none; margin: 20px 30px; height: 6px; 
-            background: #f0f0f0; border-radius: 3px; overflow: hidden;
-        }
-        .progress-bar { 
-            height: 100%; background: linear-gradient(45deg, #2196F3, #21CBF3);
-            width: 0%; transition: width 0.3s ease;
-        }
-        
-        .settings { 
-            background: #f8f9fa; padding: 20px 30px; 
+            padding: 30px; 
+            display: flex; 
+            gap: 15px; 
+            flex-wrap: wrap; 
+            justify-content: center;
             border-top: 1px solid #eee;
         }
+        
+        .btn { 
+            padding: 15px 25px; 
+            border: none; 
+            border-radius: 25px;
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-secondary { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .btn-success { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; display: none; }
+        
+        .btn:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+        }
+        
+        .btn:disabled { 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: none; 
+        }
+        
+        /* Progress */
+        .progress { 
+            display: none; 
+            margin: 20px 30px; 
+            height: 8px; 
+            background: #f0f0f0; 
+            border-radius: 10px; 
+            overflow: hidden;
+        }
+        
+        .progress-bar { 
+            height: 100%; 
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%; 
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        /* Settings */
+        .settings { 
+            background: #f8f9fa; 
+            padding: 30px; 
+            border-top: 1px solid #eee;
+            display: none;
+        }
+        
+        .settings h3 {
+            margin-bottom: 25px;
+            color: #333;
+            font-size: 1.3em;
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
         .setting-group { 
-            display: flex; align-items: center; gap: 15px; 
-            margin-bottom: 15px; flex-wrap: wrap;
+            display: flex; 
+            flex-direction: column;
+            gap: 10px;
         }
-        .setting-group label { font-weight: 600; min-width: 120px; }
-        input[type="range"] { flex: 1; min-width: 150px; }
+        
+        .setting-group label { 
+            font-weight: 600; 
+            color: #555;
+        }
+        
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        input[type="range"] { 
+            flex: 1; 
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
         .range-value { 
-            background: #2196F3; color: white; padding: 4px 8px; 
-            border-radius: 4px; font-size: 0.9em; min-width: 40px; text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 6px 12px; 
+            border-radius: 15px; 
+            font-size: 0.9em; 
+            min-width: 50px; 
+            text-align: center;
+            font-weight: 600;
         }
+        
+        /* Results */
+        .results { 
+            display: none; 
+            padding: 30px; 
+            border-top: 1px solid #eee;
+        }
+        
+        .results h3 {
+            margin-bottom: 25px;
+            color: #333;
+            font-size: 1.4em;
+            text-align: center;
+        }
+        
+        .image-comparison { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 30px; 
+            margin-bottom: 30px;
+        }
+        
+        .image-box { 
+            background: #f8f9fa; 
+            border-radius: 15px; 
+            overflow: hidden; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .image-box:hover {
+            transform: translateY(-5px);
+        }
+        
+        .image-box h4 { 
+            background: linear-gradient(135deg, #333 0%, #555 100%);
+            color: white; 
+            padding: 15px 20px; 
+            margin: 0; 
+            font-size: 1.1em;
+        }
+        
+        .image-box canvas { 
+            width: 100%; 
+            height: auto; 
+            display: block;
+            max-height: 400px;
+            object-fit: contain;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #f8f9fa;
+            padding: 25px;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
+        
+        .footer p {
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .features span {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { border-radius: 15px; }
+            .header { padding: 30px 20px; }
+            .upload-zone, .controls, .settings, .results { padding: 20px; }
+            .upload-zone { padding: 40px 20px; }
+            .image-comparison { grid-template-columns: 1fr; gap: 20px; }
+            .settings-grid { grid-template-columns: 1fr; }
+            .features { flex-direction: column; gap: 10px; }
+            .controls { flex-direction: column; }
+            .btn { justify-content: center; }
+        }
+        
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header với trạng thái hệ thống -->
         <div class="header">
             <h1>🎨 Làm Nét & Khôi Phục Ảnh</h1>
-            <p>Công cụ AI miễn phí - Xử lý hoàn toàn trên máy bạn</p>
+            <p>Công cụ miễn phí - Xử lý hoàn toàn trên máy bạn</p>
+            <div class="status loading" id="cvStatus">⏳ Đang tải OpenCV...</div>
         </div>
         
-        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-            <div style="font-size: 4em; margin-bottom: 20px;">📸</div>
+        <!-- Khu vực upload ảnh -->
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📸</div>
             <h3>Kéo thả ảnh vào đây hoặc click để chọn</h3>
-            <p style="color: #666; margin-top: 10px;">Hỗ trợ: JPG, PNG, WebP (tối đa 20MB)</p>
+            <p>Hỗ trợ: JPG, PNG, WebP (tối đa 20MB)</p>
         </div>
         
-        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <input type="file" id="fileInput" accept="image/*">
         
+        <!-- Nút điều khiển -->
         <div class="controls">
-            <button class="btn btn-primary" onclick="enhanceSharpness()" disabled>
+            <button class="btn btn-primary" id="enhanceBtn" onclick="enhanceSharpness()" disabled>
                 ✨ Làm Nét Ảnh
             </button>
-            <button class="btn btn-secondary" onclick="restorePhoto()" disabled>
+            <button class="btn btn-secondary" id="restoreBtn" onclick="restorePhoto()" disabled>
                 🔧 Khôi Phục Ảnh Cũ
             </button>
-            <button class="btn btn-success" onclick="downloadResult()" disabled style="display: none;">
+            <button class="btn btn-success" id="downloadBtn" onclick="downloadResult()" disabled>
                 💾 Tải Xuống
             </button>
         </div>
         
-        <div class="progress">
-            <div class="progress-bar"></div>
+        <!-- Thanh tiến trình -->
+        <div class="progress" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-text" id="progressText">Đang xử lý...</div>
         </div>
         
-        <div class="settings">
-            <div class="setting-group">
-                <label>Độ nét:</label>
-                <input type="range" id="sharpness" min="0" max="3" step="0.1" value="1.5">
-                <span class="range-value" id="sharpnessValue">1.5</span>
-            </div>
-            <div class="setting-group">
-                <label>Giảm nhiễu:</label>
-                <input type="range" id="denoise" min="0" max="20" step="1" value="5">
-                <span class="range-value" id="denoiseValue">5</span>
-            </div>
-            <div class="setting-group">
-                <label>Cải thiện độ tương phản:</label>
-                <input type="range" id="contrast" min="0" max="2" step="0.1" value="1.2">
-                <span class="range-value" id="contrastValue">1.2</span>
+        <!-- Cài đặt tùy chỉnh -->
+        <div class="settings" id="settingsPanel">
+            <h3>⚙️ Tùy Chỉnh Chi Tiết</h3>
+            <div class="settings-grid">
+                <div class="setting-group">
+                    <label for="sharpness">Độ nét:</label>
+                    <div class="range-container">
+                        <input type="range" id="sharpness" min="0" max="3" step="0.1" value="1.5">
+                        <span class="range-value" id="sharpnessValue">1.5</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="denoise">Giảm nhiễu:</label>
+                    <div class="range-container">
+                        <input type="range" id="denoise" min="0" max="20" step="1" value="8">
+                        <span class="range-value" id="denoiseValue">8</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="contrast">Độ tương phản:</label>
+                    <div class="range-container">
+                        <input type="range" id="contrast" min="0.5" max="2" step="0.1" value="1.2">
+                        <span class="range-value" id="contrastValue">1.2</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="brightness">Độ sáng:</label>
+                    <div class="range-container">
+                        <input type="range" id="brightness" min="-50" max="50" step="5" value="0">
+                        <span class="range-value" id="brightnessValue">0</span>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div class="results">
+        <!-- Khu vực hiển thị kết quả -->
+        <div class="results" id="results">
+            <h3>📊 So Sánh Kết Quả</h3>
             <div class="image-comparison">
                 <div class="image-box">
-                    <h3>📷 Ảnh Gốc</h3>
+                    <h4>📷 Ảnh Gốc</h4>
                     <canvas id="originalCanvas"></canvas>
                 </div>
                 <div class="image-box">
-                    <h3>✨ Ảnh Đã Xử Lý</h3>
+                    <h4>✨ Ảnh Đã Xử Lý</h4>
                     <canvas id="resultCanvas"></canvas>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Footer thông tin -->
+        <div class="footer">
+            <p>💡 <strong>Hoàn toàn miễn phí</strong> - Ảnh được xử lý trên máy bạn, không upload lên server</p>
+            <div class="features">
+                <span>🔒 Bảo mật tuyệt đối</span>
+                <span>⚡ Xử lý nhanh</span>
+                <span>📱 Hỗ trợ mobile</span>
+                <span>🌐 Hoạt động offline</span>
             </div>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let originalImage = null;
-        let processedImage = null;
-        let cvReady = false;
+        // === BIẾN TOÀN CỤC ===
+        let originalImage = null;  // Lưu trữ canvas ảnh gốc
+        let cvReady = false;       // Trạng thái sẵn sàng của OpenCV.js
         
-        // Wait for OpenCV to load
+        // === KHỞI TẠO HỆ THỐNG ===
+        
+        // Hàm được gọi khi OpenCV.js tải xong
         function onOpenCvReady() {
-            cvReady = true;
-            console.log('OpenCV.js is ready');
-        }
-        
-        // Check if OpenCV is loaded
-        function waitForOpenCV() {
-            if (typeof cv !== 'undefined') {
-                onOpenCvReady();
+            // Kiểm tra kỹ lưỡng OpenCV đã sẵn sàng
+            if (typeof cv !== 'undefined' && typeof cv.Mat === 'function') {
+                cvReady = true;
+                updateStatus('ready', '✅ Hệ thống sẵn sàng');
+                console.log('OpenCV.js đã sẵn sàng sử dụng');
             } else {
-                setTimeout(waitForOpenCV, 100);
+                // Thử lại sau 100ms nếu chưa sẵn sàng
+                setTimeout(onOpenCvReady, 100);
             }
         }
-        waitForOpenCV();
         
-        // Update range values
-        document.getElementById('sharpness').oninput = function() {
-            document.getElementById('sharpnessValue').textContent = this.value;
-        };
-        document.getElementById('denoise').oninput = function() {
-            document.getElementById('denoiseValue').textContent = this.value;
-        };
-        document.getElementById('contrast').oninput = function() {
-            document.getElementById('contrastValue').textContent = this.value;
-        };
+        // Cập nhật trạng thái hiển thị
+        function updateStatus(type, message) {
+            const statusEl = document.getElementById('cvStatus');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
         
-        // File handling
-        document.getElementById('fileInput').addEventListener('change', handleFile);
-        
-        const uploadZone = document.querySelector('.upload-zone');
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.classList.add('dragover');
+        // === KHỞI TẠO SỰ KIỆN ===
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            initializeRangeInputs();
+            
+            // Kiểm tra OpenCV định kỳ nếu chưa tải xong
+            let checkCount = 0;
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                if (cvReady) {
+                    clearInterval(checkInterval);
+                } else if (checkCount > 100) { // Timeout sau 10 giây
+                    clearInterval(checkInterval);
+                    updateStatus('error', '❌ Không thể tải OpenCV');
+                    console.error('OpenCV loading timeout');
+                }
+            }, 100);
         });
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('dragover');
-        });
-        uploadZone.addEventListener('drop', (e) => {
+        
+        // Khởi tạo các sự kiện cho upload và drag & drop
+        function initializeEventListeners() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadZone = document.getElementById('uploadZone');
+            
+            // Sự kiện chọn file
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // Sự kiện kéo thả
+            uploadZone.addEventListener('dragover', handleDragOver);
+            uploadZone.addEventListener('dragleave', handleDragLeave);
+            uploadZone.addEventListener('drop', handleDrop);
+            
+            // Ngăn chặn hành vi mặc định của trình duyệt
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+        }
+        
+        // Khởi tạo các thanh trượt
+        function initializeRangeInputs() {
+            const ranges = ['sharpness', 'denoise', 'contrast', 'brightness'];
+            
+            ranges.forEach(id => {
+                const input = document.getElementById(id);
+                const valueDisplay = document.getElementById(id + 'Value');
+                
+                input.addEventListener('input', function() {
+                    valueDisplay.textContent = this.value;
+                });
+            });
+        }
+        
+        // === XỬ LÝ FILE VÀ DRAG & DROP ===
+        
+        function preventDefaults(e) {
             e.preventDefault();
-            uploadZone.classList.remove('dragover');
+            e.stopPropagation();
+        }
+        
+        function handleDragOver(e) {
+            preventDefaults(e);
+            this.classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            preventDefaults(e);
+            this.classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            preventDefaults(e);
+            this.classList.remove('dragover');
+            
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                handleFileObject(files[0]);
+                handleFile(files[0]);
             }
-        });
-        
-        function handleFile(event) {
-            handleFileObject(event.target.files[0]);
         }
         
-        function handleFileObject(file) {
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        }
+        
+        // Xử lý file được chọn
+        function handleFile(file) {
+            // Kiểm tra định dạng file
             if (!file || !file.type.startsWith('image/')) {
-                alert('Vui lòng chọn file ảnh hợp lệ!');
+                alert('Vui lòng chọn file ảnh hợp lệ (JPG, PNG, WebP)!');
                 return;
             }
             
+            // Kiểm tra kích thước file (giới hạn 20MB)
             if (file.size > 20 * 1024 * 1024) {
-                alert('File quá lớn! Vui lòng chọn ảnh dưới 20MB.');
+                alert('File ảnh quá lớn! Vui lòng chọn ảnh dưới 20MB.');
                 return;
             }
             
+            // Đọc file và tải lên canvas
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = function(e) {
                 loadImageToCanvas(e.target.result);
             };
             reader.readAsDataURL(file);
         }
         
+        // Tải ảnh lên canvas
         function loadImageToCanvas(imageSrc) {
             const img = new Image();
-            img.onload = () => {
+            img.onload = function() {
                 const canvas = document.getElementById('originalCanvas');
                 const ctx = canvas.getContext('2d');
                 
-                // Resize if too large (for performance)
+                // Tính toán kích thước tối ưu (giới hạn 2048px để đảm bảo hiệu năng)
                 let { width, height } = img;
                 const maxSize = 2048;
+                
                 if (width > maxSize || height > maxSize) {
                     const ratio = Math.min(maxSize / width, maxSize / height);
-                    width *= ratio;
-                    height *= ratio;
+                    width = Math.floor(width * ratio);
+                    height = Math.floor(height * ratio);
                 }
                 
+                // Thiết lập canvas và vẽ ảnh
                 canvas.width = width;
                 canvas.height = height;
                 ctx.drawImage(img, 0, 0, width, height);
                 
+                // Lưu trữ tham chiếu ảnh gốc
                 originalImage = canvas;
                 
-                // Enable buttons
-                document.querySelectorAll('.controls .btn').forEach(btn => {
-                    btn.disabled = false;
-                });
-                
-                // Show results area
-                document.querySelector('.results').style.display = 'block';
-                
-                // Copy to result canvas initially
+                // Khởi tạo canvas kết quả
                 const resultCanvas = document.getElementById('resultCanvas');
                 resultCanvas.width = width;
                 resultCanvas.height = height;
                 resultCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                
+                // Cập nhật giao diện
+                enableControls();
+                showSettings();
+                showResults();
+                
+                console.log(`Ảnh đã tải: ${width}x${height}px`);
             };
+            
+            img.onerror = function() {
+                alert('Không thể tải ảnh. Vui lòng thử file khác!');
+            };
+            
             img.src = imageSrc;
         }
         
-        function showProgress() {
-            const progress = document.querySelector('.progress');
-            const bar = document.querySelector('.progress-bar');
-            progress.style.display = 'block';
+        // === CẬP NHẬT GIAO DIỆN ===
+        
+        function enableControls() {
+            document.getElementById('enhanceBtn').disabled = false;
+            document.getElementById('restoreBtn').disabled = false;
+        }
+        
+        function showSettings() {
+            const settings = document.getElementById('settingsPanel');
+            settings.style.display = 'block';
+        }
+        
+        function showResults() {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+        }
+        
+        function showProgress(text = 'Đang xử lý...') {
+            const container = document.getElementById('progressContainer');
+            const bar = document.getElementById('progressBar');
+            const textEl = document.getElementById('progressText');
             
-            let width = 0;
+            container.style.display = 'block';
+            textEl.textContent = text;
+            
+            // Mô phỏng tiến trình
+            let progress = 0;
             const interval = setInterval(() => {
-                width += Math.random() * 20 + 5;
-                if (width >= 90) {
-                    width = 90;
+                progress += Math.random() * 15 + 5;
+                if (progress >= 90) {
+                    progress = 90;
                     clearInterval(interval);
                 }
-                bar.style.width = width + '%';
+                bar.style.width = progress + '%';
             }, 100);
             
-            return () => {
+            // Trả về hàm để ẩn progress
+            return function hideProgress() {
                 clearInterval(interval);
                 bar.style.width = '100%';
                 setTimeout(() => {
-                    progress.style.display = 'none';
+                    container.style.display = 'none';
                     bar.style.width = '0%';
                 }, 500);
             };
         }
         
-        async function enhanceSharpness() {
+        // === XỬ LÝ ẢNH BẰNG OPENCV ===
+        
+        // Lấy cài đặt hiện tại từ UI
+        function getCurrentSettings() {
+            return {
+                sharpness: parseFloat(document.getElementById('sharpness').value),
+                denoise: parseInt(document.getElementById('denoise').value),
+                contrast: parseFloat(document.getElementById('contrast').value),
+                brightness: parseInt(document.getElementById('brightness').value)
+            };
+        }
+        
+        // Hàm làm nét ảnh
+        function enhanceSharpness() {
             if (!originalImage || !cvReady) {
                 alert('Vui lòng chọn ảnh và đợi hệ thống sẵn sàng!');
                 return;
             }
             
-            const hideProgress = showProgress();
+            const hideProgress = showProgress('Đang làm nét ảnh...');
             
             try {
-                // Get parameters
-                const sharpness = parseFloat(document.getElementById('sharpness').value);
-                const denoiseLevel = parseInt(document.getElementById('denoise').value);
-                const contrastLevel = parseFloat(document.getElementById('contrast').value);
+                const settings = getCurrentSettings();
                 
-                // Process with OpenCV
+                // Đọc ảnh gốc vào OpenCV matrix
                 const src = cv.imread(originalImage);
                 let dst = new cv.Mat();
                 
-                // Step 1: Denoise if needed
-                if (denoiseLevel > 0) {
-                    cv.bilateralFilter(src, dst, 9, denoiseLevel * 10, denoiseLevel * 5);
-                    src.delete();
-                    var temp = dst.clone();
-                    dst.delete();
-                    dst = temp;
+                // Bước 1: Giảm nhiễu (Bilateral Filter)
+                // Giữ được cạnh trong khi làm mịn vùng đồng nhất
+                if (settings.denoise > 0) {
+                    cv.bilateralFilter(src, dst, 9, settings.denoise * 10, settings.denoise * 5);
+                } else {
+                    src.copyTo(dst);
                 }
                 
-                // Step 2: Unsharp masking for sharpening
-                if (sharpness > 0) {
+                // Bước 2: Làm nét (Unsharp Masking)
+                // Công thức: ảnh_nét = ảnh_gốc + amount * (ảnh_gốc - ảnh_mờ)
+                if (settings.sharpness > 0) {
                     const blurred = new cv.Mat();
-                    const kernel = new cv.Mat();
-                    cv.GaussianBlur(dst, blurred, new cv.Size(0, 0), 1.0, 1.0, cv.BORDER_DEFAULT);
+                    const temp = dst.clone();
                     
-                    // dst = (1 + amount) * original - amount * blurred
-                    cv.addWeighted(dst, 1 + sharpness, blurred, -sharpness, 0, dst);
+                    // Tạo ảnh mờ bằng Gaussian Blur
+                    cv.GaussianBlur(temp, blurred, new cv.Size(0, 0), 1.0, 1.0, cv.BORDER_DEFAULT);
                     
+                    // Áp dụng Unsharp Masking
+                    cv.addWeighted(temp, 1 + settings.sharpness, blurred, -settings.sharpness, 0, dst);
+                    
+                    // Dọn dẹp bộ nhớ
                     blurred.delete();
+                    temp.delete();
                 }
                 
-                // Step 3: Adjust contrast
-                if (contrastLevel !== 1.0) {
-                    dst.convertTo(dst, -1, contrastLevel, 0);
+                // Bước 3: Điều chỉnh độ tương phản và độ sáng
+                if (settings.contrast !== 1.0 || settings.brightness !== 0) {
+                    dst.convertTo(dst, -1, settings.contrast, settings.brightness);
                 }
                 
-                // Display result
+                // Hiển thị kết quả
                 const resultCanvas = document.getElementById('resultCanvas');
                 cv.imshow(resultCanvas, dst);
                 
-                // Cleanup
+                // Dọn dẹp bộ nhớ
                 src.delete();
                 dst.delete();
                 
-                // Enable download
-                document.querySelector('.btn-success').style.display = 'inline-flex';
+                // Hiển thị nút tải xuống
+                document.getElementById('downloadBtn').style.display = 'inline-flex';
+                
+                console.log('Làm nét ảnh hoàn thành');
                 
             } catch (error) {
-                console.error('Enhancement failed:', error);
-                alert('Xử lý thất bại. Vui lòng thử lại!');
+                console.error('Lỗi khi làm nét ảnh:', error);
+                alert('Có lỗi xảy ra trong quá trình làm nét ảnh. Vui lòng thử lại!');
             } finally {
                 hideProgress();
             }
         }
         
-        async function restorePhoto() {
+        // Hàm khôi phục ảnh cũ
+        function restorePhoto() {
             if (!originalImage || !cvReady) {
                 alert('Vui lòng chọn ảnh và đợi hệ thống sẵn sàng!');
                 return;
             }
             
-            const hideProgress = showProgress();
+            const hideProgress = showProgress('Đang khôi phục ảnh cũ...');
             
             try {
-                const denoiseLevel = parseInt(document.getElementById('denoise').value);
-                const contrastLevel = parseFloat(document.getElementById('contrast').value);
+                const settings = getCurrentSettings();
                 
+                // Đọc ảnh gốc
                 const src = cv.imread(originalImage);
                 let dst = new cv.Mat();
                 
-                // Step 1: Strong denoising for old photos
-                cv.bilateralFilter(src, dst, 15, denoiseLevel * 15, denoiseLevel * 10);
+                // Bước 1: Giảm nhiễu mạnh cho ảnh cũ
+                // Sử dụng Bilateral Filter với tham số lớn hơn
+                cv.bilateralFilter(src, dst, 15, Math.max(120, settings.denoise * 15), Math.max(80, settings.denoise * 10));
                 
-                // Step 2: Histogram equalization for better contrast
+                // Bước 2: Cân bằng Histogram để cải thiện độ tương phản
+                // Đặc biệt hiệu quả với ảnh cũ bị mờ, tối
                 const gray = new cv.Mat();
-                const channels = new cv.MatVector();
+                const enhanced = new cv.Mat();
                 
+                // Chuyển sang ảnh xám để cân bằng histogram
                 cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY);
                 cv.equalizeHist(gray, gray);
-                cv.cvtColor(gray, gray, cv.COLOR_GRAY2RGBA);
+                cv.cvtColor(gray, enhanced, cv.COLOR_GRAY2RGBA);
                 
-                // Blend with original for natural look
-                cv.addWeighted(dst, 0.7, gray, 0.3, 0, dst);
+                // Trộn ảnh đã cân bằng với ảnh đã giảm nhiễu
+                cv.addWeighted(dst, 0.7, enhanced, 0.3, 0, dst);
                 
-                // Step 3: Enhance contrast
-                if (contrastLevel !== 1.0) {
-                    dst.convertTo(dst, -1, contrastLevel, 10);
+                // Bước 3: Điều chỉnh độ tương phản và độ sáng
+                if (settings.contrast !== 1.0 || settings.brightness !== 0) {
+                    dst.convertTo(dst, -1, settings.contrast, settings.brightness + 5); // Thêm một chút độ sáng
                 }
                 
-                // Step 4: Light sharpening
+                // Bước 4: Làm nét nhẹ để khôi phục chi tiết
                 const blurred = new cv.Mat();
-                cv.GaussianBlur(dst, blurred, new cv.Size(0, 0), 0.8, 0.8, cv.BORDER_DEFAULT);
-                cv.addWeighted(dst, 1.3, blurred, -0.3, 0, dst);
+                const temp = dst.clone();
+                cv.GaussianBlur(temp, blurred, new cv.Size(0, 0), 0.8, 0.8, cv.BORDER_DEFAULT);
+                cv.addWeighted(temp, 1.2, blurred, -0.2, 0, dst);
                 
-                // Display result
+                // Hiển thị kết quả
                 const resultCanvas = document.getElementById('resultCanvas');
                 cv.imshow(resultCanvas, dst);
                 
-                // Cleanup
+                // Dọn dẹp bộ nhớ
                 src.delete();
                 dst.delete();
                 gray.delete();
-                channels.delete();
+                enhanced.delete();
                 blurred.delete();
+                temp.delete();
                 
-                // Enable download
-                document.querySelector('.btn-success').style.display = 'inline-flex';
+                // Hiển thị nút tải xuống
+                document.getElementById('downloadBtn').style.display = 'inline-flex';
+                
+                console.log('Khôi phục ảnh cũ hoàn thành');
                 
             } catch (error) {
-                console.error('Restoration failed:', error);
-                alert('Khôi phục thất bại. Vui lòng thử lại!');
+                console.error('Lỗi khi khôi phục ảnh:', error);
+                alert('Có lỗi xảy ra trong quá trình khôi phục ảnh. Vui lòng thử lại!');
             } finally {
                 hideProgress();
             }
         }
         
+        // === TẢI XUỐNG KẾT QUẢ ===
+        
         function downloadResult() {
             const resultCanvas = document.getElementById('resultCanvas');
-            if (!resultCanvas) return;
+            if (!resultCanvas) {
+                alert('Không có ảnh để tải xuống!');
+                return;
+            }
             
-            // Create download link
-            const link = document.createElement('a');
-            link.download = 'enhanced_photo_' + Date.now() + '.png';
-            link.href = resultCanvas.toDataURL('image/png');
-            link.click();
+            try {
+                // Tạo link tải xuống
+                const link = document.createElement('a');
+                link.download = `enhanced_photo_${Date.now()}.png`;
+                link.href = resultCanvas.toDataURL('image/png', 0.95);
+                
+                // Kích hoạt tải xuống
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                console.log('Tải xuống thành công');
+                
+            } catch (error) {
+                console.error('Lỗi khi tải xuống:', error);
+                alert('Tải xuống thất bại. Vui lòng thử lại!');
+            }
         }
+        
+        // === XỬ LÝ LỖI ===
+        
+        // Xử lý lỗi toàn cục
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('opencv')) {
+                updateStatus('error', '❌ Lỗi tải OpenCV');
+                console.error('OpenCV loading error:', e);
+            }
+        });
+        
+        // Log thời gian tải trang (để debug)
+        window.addEventListener('load', () => {
+            console.log('Trang web đã tải hoàn tất');
+        });
     </script>
 </body>
 </html>
