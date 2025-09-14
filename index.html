@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Làm Nét & Khôi Phục Ảnh - Miễn Phí</title>
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
     
     <style>
-        /* Reset và thiết lập cơ bản */
         * { 
             margin: 0; 
             padding: 0; 
@@ -23,7 +21,6 @@
             color: #333;
         }
         
-        /* Container chính */
         .container { 
             max-width: 1200px; 
             margin: 0 auto; 
@@ -39,7 +36,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Header */
         .header { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; 
@@ -70,13 +66,13 @@
         .status.ready { color: #4CAF50; }
         .status.loading { color: #ffd700; animation: pulse 2s infinite; }
         .status.error { color: #ff6b6b; }
+        .status.fallback { color: #ff9800; }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
         }
         
-        /* Upload Zone */
         .upload-zone { 
             border: 3px dashed #ddd; 
             margin: 30px; 
@@ -101,18 +97,6 @@
             opacity: 0.7;
         }
         
-        .upload-zone h3 { 
-            font-size: 1.5em; 
-            margin-bottom: 10px; 
-            color: #333;
-        }
-        
-        .upload-zone p { 
-            color: #666; 
-            margin-bottom: 20px; 
-        }
-        
-        /* Controls */
         .controls { 
             padding: 30px; 
             display: flex; 
@@ -137,21 +121,6 @@
             overflow: hidden;
         }
         
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .btn:hover::before {
-            left: 100%;
-        }
-        
         .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .btn-secondary { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
         .btn-success { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; display: none; }
@@ -168,7 +137,6 @@
             box-shadow: none; 
         }
         
-        /* Progress */
         .progress { 
             display: none; 
             margin: 20px 30px; 
@@ -193,18 +161,11 @@
             color: #667eea;
         }
         
-        /* Settings */
         .settings { 
             background: #f8f9fa; 
             padding: 30px; 
             border-top: 1px solid #eee;
             display: none;
-        }
-        
-        .settings h3 {
-            margin-bottom: 25px;
-            color: #333;
-            font-size: 1.3em;
         }
         
         .settings-grid {
@@ -217,11 +178,6 @@
             display: flex; 
             flex-direction: column;
             gap: 10px;
-        }
-        
-        .setting-group label { 
-            font-weight: 600; 
-            color: #555;
         }
         
         .range-container {
@@ -239,26 +195,6 @@
             -webkit-appearance: none;
         }
         
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-        
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-        
         .range-value { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; 
@@ -270,18 +206,10 @@
             font-weight: 600;
         }
         
-        /* Results */
         .results { 
             display: none; 
             padding: 30px; 
             border-top: 1px solid #eee;
-        }
-        
-        .results h3 {
-            margin-bottom: 25px;
-            color: #333;
-            font-size: 1.4em;
-            text-align: center;
         }
         
         .image-comparison { 
@@ -296,11 +224,6 @@
             border-radius: 15px; 
             overflow: hidden; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .image-box:hover {
-            transform: translateY(-5px);
         }
         
         .image-box h4 { 
@@ -319,17 +242,11 @@
             object-fit: contain;
         }
         
-        /* Footer */
         .footer {
             background: #f8f9fa;
             padding: 25px;
             text-align: center;
             border-top: 1px solid #eee;
-        }
-        
-        .footer p {
-            color: #555;
-            margin-bottom: 15px;
         }
         
         .features {
@@ -339,24 +256,27 @@
             flex-wrap: wrap;
         }
         
-        .features span {
-            color: #667eea;
-            font-weight: 600;
-            font-size: 0.95em;
+        .error-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 30px;
+            display: none;
         }
         
-        /* Responsive */
+        .error-info h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .error-info p {
+            color: #856404;
+            margin-bottom: 8px;
+        }
+        
         @media (max-width: 768px) {
-            body { padding: 10px; }
-            .container { border-radius: 15px; }
-            .header { padding: 30px 20px; }
-            .upload-zone, .controls, .settings, .results { padding: 20px; }
-            .upload-zone { padding: 40px 20px; }
-            .image-comparison { grid-template-columns: 1fr; gap: 20px; }
-            .settings-grid { grid-template-columns: 1fr; }
-            .features { flex-direction: column; gap: 10px; }
-            .controls { flex-direction: column; }
-            .btn { justify-content: center; }
+            .image-comparison { grid-template-columns: 1fr; }
         }
         
         #fileInput { display: none; }
@@ -364,14 +284,19 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header với trạng thái hệ thống -->
         <div class="header">
             <h1>🎨 Làm Nét & Khôi Phục Ảnh</h1>
             <p>Công cụ miễn phí - Xử lý hoàn toàn trên máy bạn</p>
-            <div class="status loading" id="cvStatus">⏳ Đang tải OpenCV...</div>
+            <div class="status loading" id="cvStatus">⏳ Đang khởi tạo hệ thống...</div>
         </div>
         
-        <!-- Khu vực upload ảnh -->
+        <div class="error-info" id="errorInfo">
+            <h4>⚠️ Thông tin quan trọng</h4>
+            <p>• Hệ thống đang chạy ở chế độ cơ bản (không có OpenCV)</p>
+            <p>• Chức năng làm nét sẽ sử dụng Canvas API thay thế</p>
+            <p>• Để có hiệu quả tốt nhất, vui lòng deploy lên GitHub Pages</p>
+        </div>
+        
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
             <div class="upload-icon">📸</div>
             <h3>Kéo thả ảnh vào đây hoặc click để chọn</h3>
@@ -380,7 +305,6 @@
         
         <input type="file" id="fileInput" accept="image/*">
         
-        <!-- Nút điều khiển -->
         <div class="controls">
             <button class="btn btn-primary" id="enhanceBtn" onclick="enhanceSharpness()" disabled>
                 ✨ Làm Nét Ảnh
@@ -393,51 +317,48 @@
             </button>
         </div>
         
-        <!-- Thanh tiến trình -->
         <div class="progress" id="progressContainer">
             <div class="progress-bar" id="progressBar"></div>
             <div class="progress-text" id="progressText">Đang xử lý...</div>
         </div>
         
-        <!-- Cài đặt tùy chỉnh -->
         <div class="settings" id="settingsPanel">
             <h3>⚙️ Tùy Chỉnh Chi Tiết</h3>
             <div class="settings-grid">
                 <div class="setting-group">
                     <label for="sharpness">Độ nét:</label>
                     <div class="range-container">
-                        <input type="range" id="sharpness" min="0" max="3" step="0.1" value="1.5">
-                        <span class="range-value" id="sharpnessValue">1.5</span>
-                    </div>
-                </div>
-                
-                <div class="setting-group">
-                    <label for="denoise">Giảm nhiễu:</label>
-                    <div class="range-container">
-                        <input type="range" id="denoise" min="0" max="20" step="1" value="8">
-                        <span class="range-value" id="denoiseValue">8</span>
+                        <input type="range" id="sharpness" min="0" max="5" step="0.1" value="2.0">
+                        <span class="range-value" id="sharpnessValue">2.0</span>
                     </div>
                 </div>
                 
                 <div class="setting-group">
                     <label for="contrast">Độ tương phản:</label>
                     <div class="range-container">
-                        <input type="range" id="contrast" min="0.5" max="2" step="0.1" value="1.2">
-                        <span class="range-value" id="contrastValue">1.2</span>
+                        <input type="range" id="contrast" min="0.5" max="3" step="0.1" value="1.3">
+                        <span class="range-value" id="contrastValue">1.3</span>
                     </div>
                 </div>
                 
                 <div class="setting-group">
                     <label for="brightness">Độ sáng:</label>
                     <div class="range-container">
-                        <input type="range" id="brightness" min="-50" max="50" step="5" value="0">
-                        <span class="range-value" id="brightnessValue">0</span>
+                        <input type="range" id="brightness" min="-100" max="100" step="5" value="15">
+                        <span class="range-value" id="brightnessValue">15</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="saturation">Độ bão hòa:</label>
+                    <div class="range-container">
+                        <input type="range" id="saturation" min="0" max="2" step="0.1" value="1.2">
+                        <span class="range-value" id="saturationValue">1.2</span>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Khu vực hiển thị kết quả -->
         <div class="results" id="results">
             <h3>📊 So Sánh Kết Quả</h3>
             <div class="image-comparison">
@@ -452,7 +373,6 @@
             </div>
         </div>
         
-        <!-- Footer thông tin -->
         <div class="footer">
             <p>💡 <strong>Hoàn toàn miễn phí</strong> - Ảnh được xử lý trên máy bạn, không upload lên server</p>
             <div class="features">
@@ -465,74 +385,103 @@
     </div>
 
     <script>
-        // === BIẾN TOÀN CỤC ===
-        let originalImage = null;  // Lưu trữ canvas ảnh gốc
-        let cvReady = false;       // Trạng thái sẵn sàng của OpenCV.js
+        let originalImage = null;
+        let cvReady = false;
+        let usingFallback = false;
+        let hideProgressCallback = null;
         
-        // === KHỞI TẠO HỆ THỐNG ===
+        // Khởi tạo hệ thống
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem();
+            initializeEventListeners();
+            initializeRangeInputs();
+        });
         
-        // Hàm được gọi khi OpenCV.js tải xong
-        function onOpenCvReady() {
-            // Kiểm tra kỹ lưỡng OpenCV đã sẵn sàng
-            if (typeof cv !== 'undefined' && typeof cv.Mat === 'function') {
-                cvReady = true;
-                updateStatus('ready', '✅ Hệ thống sẵn sàng');
-                console.log('OpenCV.js đã sẵn sàng sử dụng');
+        function initializeSystem() {
+            updateStatus('loading', '⏳ Đang khởi tạo hệ thống...');
+            
+            // Thử tải OpenCV với timeout
+            let opencvLoaded = false;
+            
+            // Tạo script tag để tải OpenCV
+            const script = document.createElement('script');
+            script.src = 'https://docs.opencv.org/4.8.0/opencv.js';
+            script.async = true;
+            script.onload = function() {
+                opencvLoaded = true;
+                checkOpenCV();
+            };
+            script.onerror = function() {
+                console.warn('Failed to load OpenCV from docs.opencv.org, trying CDN...');
+                loadOpenCVFallback();
+            };
+            document.head.appendChild(script);
+            
+            // Timeout fallback sau 8 giây
+            setTimeout(() => {
+                if (!opencvLoaded && !cvReady) {
+                    console.warn('OpenCV loading timeout, using fallback mode');
+                    enableFallbackMode();
+                }
+            }, 8000);
+        }
+        
+        function loadOpenCVFallback() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/opencv.js@4.8.0/opencv.js';
+            script.async = true;
+            script.onload = function() {
+                checkOpenCV();
+            };
+            script.onerror = function() {
+                console.warn('All OpenCV CDNs failed, using fallback mode');
+                enableFallbackMode();
+            };
+            document.head.appendChild(script);
+        }
+        
+        function checkOpenCV() {
+            if (typeof cv !== 'undefined' && cv.imread) {
+                cv.onRuntimeInitialized = function() {
+                    cvReady = true;
+                    updateStatus('ready', '✅ Hệ thống sẵn sàng (OpenCV)');
+                    console.log('OpenCV loaded successfully');
+                };
             } else {
-                // Thử lại sau 100ms nếu chưa sẵn sàng
-                setTimeout(onOpenCvReady, 100);
+                setTimeout(checkOpenCV, 500);
             }
         }
         
-        // Cập nhật trạng thái hiển thị
+        function enableFallbackMode() {
+            usingFallback = true;
+            updateStatus('fallback', '⚡ Chế độ cơ bản (Canvas API)');
+            document.getElementById('errorInfo').style.display = 'block';
+            console.log('Running in fallback mode with Canvas API');
+        }
+        
         function updateStatus(type, message) {
             const statusEl = document.getElementById('cvStatus');
             statusEl.className = `status ${type}`;
             statusEl.textContent = message;
         }
         
-        // === KHỞI TẠO SỰ KIỆN ===
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeEventListeners();
-            initializeRangeInputs();
-            
-            // Kiểm tra OpenCV định kỳ nếu chưa tải xong
-            let checkCount = 0;
-            const checkInterval = setInterval(() => {
-                checkCount++;
-                if (cvReady) {
-                    clearInterval(checkInterval);
-                } else if (checkCount > 100) { // Timeout sau 10 giây
-                    clearInterval(checkInterval);
-                    updateStatus('error', '❌ Không thể tải OpenCV');
-                    console.error('OpenCV loading timeout');
-                }
-            }, 100);
-        });
-        
-        // Khởi tạo các sự kiện cho upload và drag & drop
         function initializeEventListeners() {
             const fileInput = document.getElementById('fileInput');
             const uploadZone = document.getElementById('uploadZone');
             
-            // Sự kiện chọn file
             fileInput.addEventListener('change', handleFileSelect);
-            
-            // Sự kiện kéo thả
             uploadZone.addEventListener('dragover', handleDragOver);
             uploadZone.addEventListener('dragleave', handleDragLeave);
             uploadZone.addEventListener('drop', handleDrop);
             
-            // Ngăn chặn hành vi mặc định của trình duyệt
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 uploadZone.addEventListener(eventName, preventDefaults, false);
                 document.body.addEventListener(eventName, preventDefaults, false);
             });
         }
         
-        // Khởi tạo các thanh trượt
         function initializeRangeInputs() {
-            const ranges = ['sharpness', 'denoise', 'contrast', 'brightness'];
+            const ranges = ['sharpness', 'contrast', 'brightness', 'saturation'];
             
             ranges.forEach(id => {
                 const input = document.getElementById(id);
@@ -543,8 +492,6 @@
                 });
             });
         }
-        
-        // === XỬ LÝ FILE VÀ DRAG & DROP ===
         
         function preventDefaults(e) {
             e.preventDefault();
@@ -577,21 +524,17 @@
             }
         }
         
-        // Xử lý file được chọn
         function handleFile(file) {
-            // Kiểm tra định dạng file
             if (!file || !file.type.startsWith('image/')) {
-                alert('Vui lòng chọn file ảnh hợp lệ (JPG, PNG, WebP)!');
+                alert('Vui lòng chọn file ảnh hợp lệ!');
                 return;
             }
             
-            // Kiểm tra kích thước file (giới hạn 20MB)
             if (file.size > 20 * 1024 * 1024) {
-                alert('File ảnh quá lớn! Vui lòng chọn ảnh dưới 20MB.');
+                alert('File quá lớn! Vui lòng chọn ảnh dưới 20MB.');
                 return;
             }
             
-            // Đọc file và tải lên canvas
             const reader = new FileReader();
             reader.onload = function(e) {
                 loadImageToCanvas(e.target.result);
@@ -599,16 +542,14 @@
             reader.readAsDataURL(file);
         }
         
-        // Tải ảnh lên canvas
         function loadImageToCanvas(imageSrc) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.getElementById('originalCanvas');
                 const ctx = canvas.getContext('2d');
                 
-                // Tính toán kích thước tối ưu (giới hạn 2048px để đảm bảo hiệu năng)
                 let { width, height } = img;
-                const maxSize = 2048;
+                const maxSize = 1200;
                 
                 if (width > maxSize || height > maxSize) {
                     const ratio = Math.min(maxSize / width, maxSize / height);
@@ -616,26 +557,22 @@
                     height = Math.floor(height * ratio);
                 }
                 
-                // Thiết lập canvas và vẽ ảnh
                 canvas.width = width;
                 canvas.height = height;
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Lưu trữ tham chiếu ảnh gốc
                 originalImage = canvas;
                 
-                // Khởi tạo canvas kết quả
                 const resultCanvas = document.getElementById('resultCanvas');
                 resultCanvas.width = width;
                 resultCanvas.height = height;
                 resultCanvas.getContext('2d').drawImage(canvas, 0, 0);
                 
-                // Cập nhật giao diện
                 enableControls();
                 showSettings();
                 showResults();
                 
-                console.log(`Ảnh đã tải: ${width}x${height}px`);
+                console.log(`Image loaded: ${width}x${height}px`);
             };
             
             img.onerror = function() {
@@ -645,21 +582,17 @@
             img.src = imageSrc;
         }
         
-        // === CẬP NHẬT GIAO DIỆN ===
-        
         function enableControls() {
             document.getElementById('enhanceBtn').disabled = false;
             document.getElementById('restoreBtn').disabled = false;
         }
         
         function showSettings() {
-            const settings = document.getElementById('settingsPanel');
-            settings.style.display = 'block';
+            document.getElementById('settingsPanel').style.display = 'block';
         }
         
         function showResults() {
-            const results = document.getElementById('results');
-            results.style.display = 'block';
+            document.getElementById('results').style.display = 'block';
         }
         
         function showProgress(text = 'Đang xử lý...') {
@@ -670,10 +603,9 @@
             container.style.display = 'block';
             textEl.textContent = text;
             
-            // Mô phỏng tiến trình
             let progress = 0;
             const interval = setInterval(() => {
-                progress += Math.random() * 15 + 5;
+                progress += Math.random() * 15 + 10;
                 if (progress >= 90) {
                     progress = 90;
                     clearInterval(interval);
@@ -681,7 +613,6 @@
                 bar.style.width = progress + '%';
             }, 100);
             
-            // Trả về hàm để ẩn progress
             return function hideProgress() {
                 clearInterval(interval);
                 bar.style.width = '100%';
@@ -692,155 +623,212 @@
             };
         }
         
-        // === XỬ LÝ ẢNH BẰNG OPENCV ===
-        
-        // Lấy cài đặt hiện tại từ UI
         function getCurrentSettings() {
             return {
                 sharpness: parseFloat(document.getElementById('sharpness').value),
-                denoise: parseInt(document.getElementById('denoise').value),
                 contrast: parseFloat(document.getElementById('contrast').value),
-                brightness: parseInt(document.getElementById('brightness').value)
+                brightness: parseInt(document.getElementById('brightness').value),
+                saturation: parseFloat(document.getElementById('saturation').value)
             };
         }
         
-        // Hàm làm nét ảnh
+        // Fallback enhancement using Canvas API
+        function enhanceWithCanvas(canvas, settings) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // Apply brightness, contrast, and saturation
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+                
+                // Convert to HSL for saturation adjustment
+                const hsl = rgbToHsl(r, g, b);
+                hsl[2] = Math.max(0, Math.min(1, hsl[2] + settings.brightness / 255));
+                hsl[1] = Math.max(0, Math.min(1, hsl[1] * settings.saturation));
+                
+                const rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
+                
+                // Apply contrast
+                r = Math.max(0, Math.min(255, (rgb[0] - 128) * settings.contrast + 128));
+                g = Math.max(0, Math.min(255, (rgb[1] - 128) * settings.contrast + 128));
+                b = Math.max(0, Math.min(255, (rgb[2] - 128) * settings.contrast + 128));
+                
+                data[i] = r;
+                data[i + 1] = g;
+                data[i + 2] = b;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            
+            // Apply sharpening filter
+            if (settings.sharpness > 0) {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(canvas, 0, 0);
+                
+                // Simple sharpening kernel
+                ctx.filter = `contrast(${100 + settings.sharpness * 20}%) brightness(${100 + settings.brightness / 5}%)`;
+                ctx.drawImage(tempCanvas, 0, 0);
+                ctx.filter = 'none';
+            }
+        }
+        
+        // Color conversion utilities
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return [h, s, l];
+        }
+        
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+        
         function enhanceSharpness() {
-            if (!originalImage || !cvReady) {
-                alert('Vui lòng chọn ảnh và đợi hệ thống sẵn sàng!');
+            if (!originalImage) {
+                alert('Vui lòng chọn ảnh trước!');
                 return;
             }
             
-            const hideProgress = showProgress('Đang làm nét ảnh...');
+            hideProgressCallback = showProgress('Đang làm nét ảnh...');
+            
+            setTimeout(() => {
+                try {
+                    const settings = getCurrentSettings();
+                    const resultCanvas = document.getElementById('resultCanvas');
+                    const ctx = resultCanvas.getContext('2d');
+                    
+                    // Copy original image
+                    ctx.drawImage(originalImage, 0, 0);
+                    
+                    if (cvReady && !usingFallback) {
+                        // Use OpenCV if available
+                        enhanceWithOpenCV(resultCanvas, settings);
+                    } else {
+                        // Use Canvas API fallback
+                        enhanceWithCanvas(resultCanvas, settings);
+                    }
+                    
+                    document.getElementById('downloadBtn').style.display = 'inline-flex';
+                    console.log('Enhancement completed');
+                    
+                } catch (error) {
+                    console.error('Enhancement error:', error);
+                    alert('Có lỗi xảy ra khi xử lý ảnh: ' + error.message);
+                } finally {
+                    if (hideProgressCallback) hideProgressCallback();
+                }
+            }, 100);
+        }
+        
+        function enhanceWithOpenCV(canvas, settings) {
+            const src = cv.imread(canvas);
+            let processed = new cv.Mat();
             
             try {
-                const settings = getCurrentSettings();
+                // Denoise
+                cv.bilateralFilter(src, processed, 9, 75, 75);
                 
-                // Đọc ảnh gốc vào OpenCV matrix
-                const src = cv.imread(originalImage);
-                let dst = new cv.Mat();
-                
-                // Bước 1: Giảm nhiễu (Bilateral Filter)
-                // Giữ được cạnh trong khi làm mịn vùng đồng nhất
-                if (settings.denoise > 0) {
-                    cv.bilateralFilter(src, dst, 9, settings.denoise * 10, settings.denoise * 5);
-                } else {
-                    src.copyTo(dst);
-                }
-                
-                // Bước 2: Làm nét (Unsharp Masking)
-                // Công thức: ảnh_nét = ảnh_gốc + amount * (ảnh_gốc - ảnh_mờ)
+                // Sharpen
                 if (settings.sharpness > 0) {
-                    const blurred = new cv.Mat();
-                    const temp = dst.clone();
-                    
-                    // Tạo ảnh mờ bằng Gaussian Blur
-                    cv.GaussianBlur(temp, blurred, new cv.Size(0, 0), 1.0, 1.0, cv.BORDER_DEFAULT);
-                    
-                    // Áp dụng Unsharp Masking
-                    cv.addWeighted(temp, 1 + settings.sharpness, blurred, -settings.sharpness, 0, dst);
-                    
-                    // Dọn dẹp bộ nhớ
-                    blurred.delete();
-                    temp.delete();
+                    const kernel = cv.matFromArray(3, 3, cv.CV_32FC1, 
+                        [-1, -1, -1, -1, 8 + settings.sharpness, -1, -1, -1, -1]);
+                    cv.filter2D(processed, processed, cv.CV_8U, kernel);
+                    kernel.delete();
                 }
                 
-                // Bước 3: Điều chỉnh độ tương phản và độ sáng
-                if (settings.contrast !== 1.0 || settings.brightness !== 0) {
-                    dst.convertTo(dst, -1, settings.contrast, settings.brightness);
-                }
+                // Adjust brightness and contrast
+                processed.convertTo(processed, -1, settings.contrast, settings.brightness);
                 
-                // Hiển thị kết quả
-                const resultCanvas = document.getElementById('resultCanvas');
-                cv.imshow(resultCanvas, dst);
+                cv.imshow(canvas, processed);
                 
-                // Dọn dẹp bộ nhớ
-                src.delete();
-                dst.delete();
-                
-                // Hiển thị nút tải xuống
-                document.getElementById('downloadBtn').style.display = 'inline-flex';
-                
-                console.log('Làm nét ảnh hoàn thành');
-                
-            } catch (error) {
-                console.error('Lỗi khi làm nét ảnh:', error);
-                alert('Có lỗi xảy ra trong quá trình làm nét ảnh. Vui lòng thử lại!');
             } finally {
-                hideProgress();
+                src.delete();
+                processed.delete();
             }
         }
         
-        // Hàm khôi phục ảnh cũ
         function restorePhoto() {
-            if (!originalImage || !cvReady) {
-                alert('Vui lòng chọn ảnh và đợi hệ thống sẵn sàng!');
+            if (!originalImage) {
+                alert('Vui lòng chọn ảnh trước!');
                 return;
             }
             
-            const hideProgress = showProgress('Đang khôi phục ảnh cũ...');
+            hideProgressCallback = showProgress('Đang khôi phục ảnh cũ...');
             
-            try {
-                const settings = getCurrentSettings();
-                
-                // Đọc ảnh gốc
-                const src = cv.imread(originalImage);
-                let dst = new cv.Mat();
-                
-                // Bước 1: Giảm nhiễu mạnh cho ảnh cũ
-                // Sử dụng Bilateral Filter với tham số lớn hơn
-                cv.bilateralFilter(src, dst, 15, Math.max(120, settings.denoise * 15), Math.max(80, settings.denoise * 10));
-                
-                // Bước 2: Cân bằng Histogram để cải thiện độ tương phản
-                // Đặc biệt hiệu quả với ảnh cũ bị mờ, tối
-                const gray = new cv.Mat();
-                const enhanced = new cv.Mat();
-                
-                // Chuyển sang ảnh xám để cân bằng histogram
-                cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY);
-                cv.equalizeHist(gray, gray);
-                cv.cvtColor(gray, enhanced, cv.COLOR_GRAY2RGBA);
-                
-                // Trộn ảnh đã cân bằng với ảnh đã giảm nhiễu
-                cv.addWeighted(dst, 0.7, enhanced, 0.3, 0, dst);
-                
-                // Bước 3: Điều chỉnh độ tương phản và độ sáng
-                if (settings.contrast !== 1.0 || settings.brightness !== 0) {
-                    dst.convertTo(dst, -1, settings.contrast, settings.brightness + 5); // Thêm một chút độ sáng
+            setTimeout(() => {
+                try {
+                    const settings = getCurrentSettings();
+                    const resultCanvas = document.getElementById('resultCanvas');
+                    const ctx = resultCanvas.getContext('2d');
+                    
+                    ctx.drawImage(originalImage, 0, 0);
+                    
+                    // Enhanced settings for photo restoration
+                    const restoreSettings = {
+                        ...settings,
+                        contrast: settings.contrast * 1.2,
+                        brightness: settings.brightness + 20,
+                        saturation: settings.saturation * 1.1
+                    };
+                    
+                    if (cvReady && !usingFallback) {
+                        enhanceWithOpenCV(resultCanvas, restoreSettings);
+                    } else {
+                        enhanceWithCanvas(resultCanvas, restoreSettings);
+                    }
+                    
+                    document.getElementById('downloadBtn').style.display = 'inline-flex';
+                    console.log('Photo restoration completed');
+                    
+                } catch (error) {
+                    console.error('Restoration error:', error);
+                    alert('Có lỗi xảy ra khi khôi phục ảnh: ' + error.message);
+                } finally {
+                    if (hideProgressCallback) hideProgressCallback();
                 }
-                
-                // Bước 4: Làm nét nhẹ để khôi phục chi tiết
-                const blurred = new cv.Mat();
-                const temp = dst.clone();
-                cv.GaussianBlur(temp, blurred, new cv.Size(0, 0), 0.8, 0.8, cv.BORDER_DEFAULT);
-                cv.addWeighted(temp, 1.2, blurred, -0.2, 0, dst);
-                
-                // Hiển thị kết quả
-                const resultCanvas = document.getElementById('resultCanvas');
-                cv.imshow(resultCanvas, dst);
-                
-                // Dọn dẹp bộ nhớ
-                src.delete();
-                dst.delete();
-                gray.delete();
-                enhanced.delete();
-                blurred.delete();
-                temp.delete();
-                
-                // Hiển thị nút tải xuống
-                document.getElementById('downloadBtn').style.display = 'inline-flex';
-                
-                console.log('Khôi phục ảnh cũ hoàn thành');
-                
-            } catch (error) {
-                console.error('Lỗi khi khôi phục ảnh:', error);
-                alert('Có lỗi xảy ra trong quá trình khôi phục ảnh. Vui lòng thử lại!');
-            } finally {
-                hideProgress();
-            }
+            }, 100);
         }
-        
-        // === TẢI XUỐNG KẾT QUẢ ===
         
         function downloadResult() {
             const resultCanvas = document.getElementById('resultCanvas');
@@ -850,38 +838,21 @@
             }
             
             try {
-                // Tạo link tải xuống
                 const link = document.createElement('a');
                 link.download = `enhanced_photo_${Date.now()}.png`;
                 link.href = resultCanvas.toDataURL('image/png', 0.95);
                 
-                // Kích hoạt tải xuống
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 
-                console.log('Tải xuống thành công');
+                console.log('Download successful');
                 
             } catch (error) {
-                console.error('Lỗi khi tải xuống:', error);
+                console.error('Download error:', error);
                 alert('Tải xuống thất bại. Vui lòng thử lại!');
             }
         }
-        
-        // === XỬ LÝ LỖI ===
-        
-        // Xử lý lỗi toàn cục
-        window.addEventListener('error', function(e) {
-            if (e.message && e.message.includes('opencv')) {
-                updateStatus('error', '❌ Lỗi tải OpenCV');
-                console.error('OpenCV loading error:', e);
-            }
-        });
-        
-        // Log thời gian tải trang (để debug)
-        window.addEventListener('load', () => {
-            console.log('Trang web đã tải hoàn tất');
-        });
     </script>
 </body>
 </html>
